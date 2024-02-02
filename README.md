@@ -12,7 +12,7 @@ NudgeUpdateConfigProfile is a script that automates setting the requiredMinimumV
 ## Requirements
 - A mac of some sort to run the script.
   - The script is written in zsh and I suggest using a LaunchDaemon for scheduling. You are welcome to modify this script for another shell if it suites your needs.
-- XMLStarlet
+- [XMLStarlet](https://xmlstar.sourceforge.net/)
   - Used to replace the payloads node.
 - A Jamf API Role and Client configured with Configuration Profile Read/Modify persmissions
 - The names of Jamf Configuration Profiles configured for Nudge
