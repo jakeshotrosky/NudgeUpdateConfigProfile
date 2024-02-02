@@ -32,7 +32,7 @@ Customize the ExampleLaunchDaemon.plist file in this repo as follows.
 1. Replace `com.organization` with whatever identifer suites your organization.
 ```
 <key>Label</key>
-	<string>com.organization.NudgeUpdateConfigProfile</string>
+<string>com.organization.NudgeUpdateConfigProfile</string>
 ```
 2. Set the program arguments (delete argument pairs as needed)
   - 1st string = the script path
@@ -42,25 +42,25 @@ Customize the ExampleLaunchDaemon.plist file in this repo as follows.
 
 ```
 <key>ProgramArguments</key>
-		<array>
-			<string>/usr/local/bin/NudgeUpdateConfigProfile.sh</string>
-            <string>Configuration Profile Name 1</string>
-            <string>-2w</string>
-            <string>Configuration Profile Name 2</string>
-            <string>-4w</string>
-            <string>Configuration Profile Name 3</string>
-            <string>-6w</string>
-        </array>
+<array>
+	<string>/usr/local/bin/NudgeUpdateConfigProfile.sh</string>
+	<string>Configuration Profile Name 1</string>
+	<string>-2w</string>
+	<string>Configuration Profile Name 2</string>
+	<string>-4w</string>
+	<string>Configuration Profile Name 3</string>
+	<string>-6w</string>
+</array>
 ```
 3. Set the schedule with StartCalendarInterval. In this example, the script will run on Tuesdays at 10am local time.
 ```
 <key>StartCalendarInterval</key>
-		<dict>
-			  <key>Hour</key>
-              <integer>10</integer>
-              <key>Weekday</key>
-              <integer>2</integer>
-		</dict>
+<dict>
+	<key>Hour</key>
+	<integer>10</integer>
+	<key>Weekday</key>
+	<integer>2</integer>
+</dict>
 ```
 4. Move the script to the path you set in the LaunchDaemon and set ownership to root:wheel `sudo chown root:wheel /usr/local/bin/NudgeUpdateConfigProfile.sh`
 5. Rename the LaunchDaemon to the label you set in the LaunchDaemon, move to `/Library/LaunchDaemons/` and set the ownership to root:wheel `sudo chown root:wheel /Library/LaunchDaemons/com.organization.NudgeUpdateConfigProfile.plist`
