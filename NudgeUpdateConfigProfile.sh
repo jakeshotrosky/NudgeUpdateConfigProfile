@@ -255,7 +255,7 @@ compareOldNewUpdateInfo() {    ### Compare the OSVersions from old and new. Exit
                     fi
                     logMessage "Replacing $versionProperties[minReqVer$oldSet] with $NEWversionProperties[minReqVer$newSet] for Target Version Rule $oldValue"
                     modifiedXML=$(echo $modifiedXML \
-                    | sed 's,'"$versionProperties[minReqVer$oldSet]"','"$NEWversionProperties[minReqVer$newSet]"',')
+                    | sed 's,>'"$versionProperties[minReqVer$oldSet]"'<,>'"$NEWversionProperties[minReqVer$newSet]"'<,')
                 break
                 fi
             done
