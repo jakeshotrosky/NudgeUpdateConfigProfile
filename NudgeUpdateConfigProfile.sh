@@ -284,6 +284,9 @@ updateXML() {                  ### Update the XML, prepare, and send to the Jamf
     ####### Replace the payloads node with out modified XML
     preppedXML=$(echo $originalXML \
         | xmlstarlet ed -u "//payloads" -v $modifiedXML)
+    ####### Enable Redeploy on Update
+    preppedXML=$(echo $preppedXML \
+        | sed 's/<redeploy_on_update>Newly Assigned<\/redeploy_on_update>/<redeploy_on_update>All<\/redeploy_on_update>/g')
 }
 
 ######################################################################################################
