@@ -21,7 +21,7 @@
 ###                         -Customize the Organization related variables.
 ###                         -For full automation of this script, please customize and load the example
 ###                         LaunchDaemon in this repo.
-###             Updated:    2024/02/01
+###             Updated:    2024/03/21 - Added Slack Webhook Notification Feature
 ###
 ######################################################################################################
 ######################################################################################################
@@ -40,6 +40,7 @@ url=""              # URL of your Jamf instance (must include https://)
 client_id=""        # Jamf API Client ID
 client_secret=""    # Jamf API Client Secret
 xmlstarletPath=""   # "/opt/homebrew/bin" if installed via brew
+webhookURL=""       # Provide a Slack Webhook URL for realtime notifications
 
 ######################################################################################################
 #          Variables related to macOS Updates
@@ -239,6 +240,7 @@ retrieveOldUpdateInfo() {      ### Pull Target OS Versions and InstallByDate fro
 compareOldNewUpdateInfo() {    ### Compare the OSVersions from old and new. Exit if no change required
     ####### Match up the targetOSVersionRules and update requiredMinimumOSVersion accordingly
     logMessage "--Comparing Old and New Values--"
+    declare -g -A webhookData
     noChangeCount=0
     for oldKey oldValue in ${(@kv)versionProperties}; do 
         if [[ $oldKey =~ "targetVerRule" ]]; then
@@ -251,9 +253,11 @@ compareOldNewUpdateInfo() {    ### Compare the OSVersions from old and new. Exit
                     if [[ $versionProperties[minReqVer$oldSet] == $NEWversionProperties[minReqVer$newSet] ]]; then
                         (( noChangeCount+=1 ))
                         logMessage "No change in latest version for Target Rule $oldValue"
+                        webhookData[ConfigProfile]="${webhookData[ConfigProfile]}\nNo change in latest version for Target Rule $oldValue"
                         break
                     fi
                     logMessage "Replacing $versionProperties[minReqVer$oldSet] with $NEWversionProperties[minReqVer$newSet] for Target Version Rule $oldValue"
+                    webhookData[ConfigProfile]="${webhookData[ConfigProfile]}\nPrevious Required Version: macOS $versionProperties[minReqVer$oldSet]\nCurrent Required Version: macOS $NEWversionProperties[minReqVer$newSet]"
                     modifiedXML=$(echo $modifiedXML \
                     | sed 's,>'"$versionProperties[minReqVer$oldSet]"'<,>'"$NEWversionProperties[minReqVer$newSet]"'<,')
                 break
@@ -264,6 +268,8 @@ compareOldNewUpdateInfo() {    ### Compare the OSVersions from old and new. Exit
 
     if [[ $OSVERSIONSCount == $noChangeCount ]]; then
         logMessage "No changes are required"
+        webhookData[ConfigProfile]="No changes are required"
+        webHookMessage
         continue
     fi
 }
@@ -287,6 +293,80 @@ updateXML() {                  ### Update the XML, prepare, and send to the Jamf
     ####### Enable Redeploy on Update
     preppedXML=$(echo $preppedXML \
         | sed 's/<redeploy_on_update>Newly Assigned<\/redeploy_on_update>/<redeploy_on_update>All<\/redeploy_on_update>/g')
+}
+
+function webHookMessage() {
+    
+    if [[ $webhookURL == *"slack"* ]]; then
+        logMessage "Notifying Slack Channel"
+
+        webhookJson=$(cat <<EOF
+        {
+            "blocks": [
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Nudge Run: ${profile}",
+                        "emoji": true
+                    }
+                },
+                {
+                    "type": "section",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": "*Latest Versions:*\nmacOS ${latestN}, macOS ${latestN1}, macOS ${latestN2}"
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": "*Deadline:*\n${InstallByDate}"
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": "*Update Info:*\n${webhookData[ConfigProfile]}"
+                        }
+                    ]
+                }
+            ]
+        }
+EOF
+)
+
+        if [[ $OSVERSIONSCount == $noChangeCount ]]; then
+            webhookJson=$(cat <<EOF
+            {
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Nudge Run: ${webhookData[profile]}",
+                            "emoji": true
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "*Nothing to update*"
+                            }
+                        ]
+                    }
+                ]
+            }
+EOF
+)
+
+        fi
+        # Submit the data to Slack
+        /usr/bin/curl -sSX POST -H 'Content-type: application/json' --data "${webhookJson}" $webhookURL 2>&1
+        
+        webhookResult="$?"
+    else 
+        logMessage "Slack URL not present. No notification will be sent."
+    fi
 }
 
 ######################################################################################################
